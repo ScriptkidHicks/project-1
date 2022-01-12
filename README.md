@@ -38,3 +38,5 @@ The goal of this project is to implement a "file checking" logic for the existin
 ## Authors
 
 Michal Young, Ram Durairajan.
+
+Tammas Hicks
