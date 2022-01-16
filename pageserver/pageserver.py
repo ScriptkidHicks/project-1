@@ -109,7 +109,7 @@ def respond(sock):
             transmit(filecontents, sock)
         else:
             transmit(STATUS_NOT_FOUND, sock)
-            transmit("Sorry, we couldn't find that file", sock)
+            transmit("<h1>Sorry, we couldn't find that file</h1>", sock)
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
