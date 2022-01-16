@@ -13,6 +13,7 @@
   program is run).
 """
 
+import os
 import config    # Configure from .ini files and command line
 import logging   # Better than print statements
 logging.basicConfig(format='%(levelname)s:%(message)s',
@@ -64,8 +65,8 @@ def serve(sock, func):
 # particular cat picture.  This one.
 ##
 CAT = """
-     ^ ^
-   =(   )=
+     ^  ^
+   =(-.- )=
 """
 
 # HTTP response codes, as the strings we will actually send.
@@ -76,6 +77,9 @@ STATUS_OK = "HTTP/1.0 200 OK\n\n"
 STATUS_FORBIDDEN = "HTTP/1.0 403 Forbidden\n\n"
 STATUS_NOT_FOUND = "HTTP/1.0 404 Not Found\n\n"
 STATUS_NOT_IMPLEMENTED = "HTTP/1.0 401 Not Implemented\n\n"
+
+# we initialize docroot as a global, so that our functions have access to it after main
+DOCROOT = ""
 
 
 def respond(sock):
@@ -90,9 +94,22 @@ def respond(sock):
     log.info("Request was {}\n***\n".format(request))
 
     parts = request.split()
+    log.info(parts)
     if len(parts) > 1 and parts[0] == "GET":
-        transmit(STATUS_OK, sock)
-        transmit(CAT, sock)
+        if ("~" in parts[1]) or (".." in parts[1]):
+            transmit(STATUS_FORBIDDEN, sock)
+            transmit("Please do not attempt GET requests with '..' or '~'", sock)
+        elif parts[1] == "/cat":
+            transmit(STATUS_OK, sock)
+            transmit(CAT, sock)
+        elif os.path.exists(DOCROOT + parts[1]):
+            with open(DOCROOT + parts[1]) as sourcefile:
+                filecontents = "".join(sourcefile.readlines())
+            transmit(STATUS_OK, sock)
+            transmit(filecontents, sock)
+        else:
+            transmit(STATUS_NOT_FOUND, sock)
+            transmit("Sorry, we couldn't find that file", sock)
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
@@ -131,13 +148,14 @@ def get_options():
         log.warning(("Port {} selected. " +
                          " Ports 0..1000 are reserved \n" +
                          "by the operating system").format(options.port))
-
     return options
 
 
 def main():
     options = get_options()
     port = options.PORT
+    global DOCROOT
+    DOCROOT = options.DOCROOT
     if options.DEBUG:
         log.setLevel(logging.DEBUG)
     sock = listen(port)
