@@ -96,20 +96,29 @@ def respond(sock):
     parts = request.split()
     log.info(parts)
     if len(parts) > 1 and parts[0] == "GET":
-        if ("~" in parts[1]) or (".." in parts[1]):
+        if parts[1] == "/":
+            if os.path.exists(DOCROOT + "/index.html"):
+                with open(DOCROOT + "/index.html", "r") as root:
+                    filecontents = "".join(root.readlines())
+                transmit(STATUS_OK, sock);
+                transmit(filecontents, sock);
+            else:
+                transmit(STATUS_OK, sock)
+                transmit("<h1>This is the root directory, but there index file here.</h1>", sock)
+        elif ("~" in parts[1]) or (".." in parts[1]):
             transmit(STATUS_FORBIDDEN, sock)
-            transmit("Please do not attempt GET requests with '..' or '~'", sock)
+            transmit("<h1>403 Forbidden</h1>", sock)
         elif parts[1] == "/cat":
             transmit(STATUS_OK, sock)
             transmit(CAT, sock)
         elif os.path.exists(DOCROOT + parts[1]):
-            with open(DOCROOT + parts[1]) as sourcefile:
+            with open(DOCROOT + parts[1], "r") as sourcefile:
                 filecontents = "".join(sourcefile.readlines())
             transmit(STATUS_OK, sock)
             transmit(filecontents, sock)
         else:
             transmit(STATUS_NOT_FOUND, sock)
-            transmit("<h1>Sorry, we couldn't find that file</h1>", sock)
+            transmit("<h1>404 Not Found</h1>", sock)
     else:
         log.info("Unhandled request: {}".format(request))
         transmit(STATUS_NOT_IMPLEMENTED, sock)
